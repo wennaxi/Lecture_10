@@ -1,0 +1,30 @@
+---
+title: "Lecture 10: Live code day: functions and iteration!"
+author: "Wenna Xi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Read in the squirrels data
+
+```{r}
+library(here)
+library(tidyverse)
+```
+
+
+## Calculate the number of squirrels seen by day of the week
+
+## Calculate the percentage of squirrels running
+
+## Plot the percentage of squirrels doing each activity
+
+## Plot the percentage of squirrels doing each activity by primary fur color
+
+## Write a function that can plot the percentage of squirrels doing each activity by an arbitrary group (e.g., primary fur color, highlight fur color, age, date, day of week)
+
+
