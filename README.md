@@ -1,2 +1,2 @@
-# Lecture_10
+# Lecture 10
 Live code day: functions and iteration!
