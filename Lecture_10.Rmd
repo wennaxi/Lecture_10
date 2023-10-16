@@ -7,24 +7,140 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(message = FALSE)
 ```
 
 ## Read in the squirrels data
 
-```{r}
+```{r, message = TRUE}
 library(here)
 library(tidyverse)
+
+file_name <- list.files(here("Squirrel_Data"), full.names = TRUE)
+
+# option 1
+nyc_squirrels <- NULL
+
+for (i in file_name) {
+  data_temp <- read_csv(i)
+  nyc_squirrels <- rbind(nyc_squirrels, data_temp)
+}
+
+
+#option 2
+nyc_squirrels <- map(file_name, read_csv) |>
+  bind_rows()
+
+summary(nyc_squirrels)
 ```
 
 
 ## Calculate the number of squirrels seen by day of the week
 
+```{r}
+nyc_squirrels <- nyc_squirrels |>
+  mutate(date = mdy(date),
+         day_of_week = wday(date, label = TRUE))
+
+nyc_squirrels |>
+  select(date, day_of_week)
+
+nyc_squirrels |>
+  group_by(day_of_week) |>
+  summarise(n = n())
+```
+
 ## Calculate the percentage of squirrels running
+```{r}
+nyc_squirrels |>
+  summarise(pct_running = sum(running == TRUE) / n())
+```
+
 
 ## Plot the percentage of squirrels doing each activity
+```{r}
+pct_squirrels <- function(x) {
+  sum(x == TRUE) / length(x)
+}
+
+nyc_squirrels |>
+  summarise(across(running:foraging, pct_squirrels)) |>
+  pivot_longer(cols = everything(),
+               names_to = "activity", 
+               values_to = "percent") |>
+  mutate(activity = str_to_title(activity)) |>
+  ggplot(aes(x = activity,
+             y = percent * 100)) +
+    geom_bar(stat = "identity") +
+  labs(x = "Activity",
+       y = "Percentage") +
+  scale_y_continuous(labels = function(x) paste0(x, "%"))
+```
 
 ## Plot the percentage of squirrels doing each activity by primary fur color
-
+```{r}
+nyc_squirrels |>
+  mutate(primary_fur_color = if_else(is.na(primary_fur_color), "Missing", primary_fur_color)) |>
+  group_by(primary_fur_color) |>
+  summarise(across(running:foraging, pct_squirrels)) |>
+  pivot_longer(cols = running:foraging,
+               names_to = "activity", 
+               values_to = "percent") |>
+  mutate(activity = str_to_title(activity)) |>
+  mutate(activity = factor(activity, levels = c("Running", "Chasing", "Climbing", "Foraging", "Eating"))) |>
+  ggplot(aes(x = activity,
+             y = percent * 100,
+             fill = primary_fur_color)) +
+    geom_bar(stat = "identity", position = "dodge", color = "gray") +
+  labs(x = "Activity",
+       y = "Percentage",
+       fill = "Primary Fur Color") +
+  scale_y_continuous(labels = function(x) paste0(x, "%"))
+```
 ## Write a function that can plot the percentage of squirrels doing each activity by an arbitrary group (e.g., primary fur color, highlight fur color, age, date, day of week)
+```{r}
+varname <- "date"
+
+plot_squirrels_by_group <- function(varname) {
+  temp_data <- nyc_squirrels |>
+    rename(group_var = all_of(varname))
+    
+    if (is.character(temp_data$group_var)) {
+      temp_data <- temp_data |>
+        mutate(group_var = if_else(is.na(group_var) | group_var == "?", "Missing", group_var))
+    }
+  
+  temp_data <- temp_data|>
+  group_by(group_var) |>
+  summarise(across(running:foraging, pct_squirrels)) |>
+  pivot_longer(cols = running:foraging,
+               names_to = "activity", 
+               values_to = "percent") |>
+  mutate(activity = str_to_title(activity)) |>
+  mutate(activity = factor(activity, levels = c("Running", "Chasing", "Climbing", "Foraging", "Eating"))) |>
+    mutate(group_var = as.factor(group_var))
+  
+  temp_data |>
+  ggplot(aes(x = activity,
+             y = percent * 100,
+             fill = group_var)) +
+    geom_bar(stat = "identity", position = "dodge", color = "gray") +
+  labs(x = "Activity",
+       y = "Percentage",
+       fill = str_to_title(gsub("_", " ", varname))) +
+  scale_y_continuous(labels = function(x) paste0(x, "%"))
+}
+
+
+plot_squirrels_by_group(varname = "primary_fur_color")
+plot_squirrels_by_group(varname = "highlight_fur_color")
+plot_squirrels_by_group(varname = "age")
+plot_squirrels_by_group(varname = "date")
+plot_squirrels_by_group(varname = "day_of_week")
+
+lapply(list("primary_fur_color", "highlight_fur_color", "age", "date", "day_of_week"), plot_squirrels_by_group)
+
+map(list("primary_fur_color", "highlight_fur_color", "age", "date", "day_of_week"), plot_squirrels_by_group)
+```
 
 
