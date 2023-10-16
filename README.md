@@ -1,2 +1,2 @@
 # Lecture 10
-Live code day: functions and iteration!
+Files for Live code day: functions and iteration!
